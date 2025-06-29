@@ -1,0 +1,35 @@
+baseURL = "https://loggg.xyz/"
+languageCode = "en-us"
+title = "loggg"
+theme = "PaperMod"
+
+[params]
+  author = "Chirag Chandrashekhar"
+  ShowReadingTime = true
+  ShowBreadCrumbs = true
+[params.profileMode]
+enabled = true
+title = "Hi there 👋"
+subtitle = "This is a collection of posts and notes from my development work. I’m currently working on mint, a single-file key-value store written in Go."
+
+[[params.profileMode.buttons]]
+  name = "Posts"
+  url = "/posts"
+
+[[params.profileMode.buttons]]
+  name = "Mint"
+  url = "https://github.com/cchirag/mint"
+
+[[params.socialIcons]]
+name = "github"
+url = "https://github.com/cchirag"
+
+[[params.socialIcons]]
+name = "x"
+url = "https://x.com/chiragchan"
+
+[[menu.main]]
+  name = "Home"
+  url = "/"
+  weight = 5
+

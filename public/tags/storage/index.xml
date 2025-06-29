@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Storage on loggg</title>
+    <link>https://loggg.xyz/tags/storage/</link>
+    <description>Recent content in Storage on loggg</description>
+    <generator>Hugo -- 0.147.9</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sun, 29 Jun 2025 12:00:00 +0530</lastBuildDate>
+    <atom:link href="https://loggg.xyz/tags/storage/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Pages and Layouts in Mint</title>
+      <link>https://loggg.xyz/posts/pages-in-mint/</link>
+      <pubDate>Sun, 29 Jun 2025 12:00:00 +0530</pubDate>
+      <guid>https://loggg.xyz/posts/pages-in-mint/</guid>
+      <description>Understand how memory pages work in operating systems, and how Mint uses them to store structured data safely.</description>
+    </item>
+  </channel>
+</rss>
