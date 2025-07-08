@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" dir="auto">
 
-<head><meta charset="utf-8">
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="noindex, nofollow">
 <title>Storage | loggg</title>
 <meta name="keywords" content="">
 <meta name="description" content="">
 <meta name="author" content="Chirag Chandrashekhar">
-<link rel="canonical" href="https://www.loggg.xyz/tags/storage/">
+<link rel="canonical" href="http://localhost:1313/tags/storage/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.8fe10233a706bc87f2e08b3cf97b8bd4c0a80f10675a143675d59212121037c0.css" integrity="sha256-j&#43;ECM6cGvIfy4Is8&#43;XuL1MCoDxBnWhQ2ddWSEhIQN8A=" rel="preload stylesheet" as="style">
 <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -19,8 +19,8 @@
 <link rel="manifest" href="/site.webmanifest" />
 <meta name="theme-color" content="#2e2e33">
 <meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" type="application/rss+xml" href="https://www.loggg.xyz/tags/storage/index.xml">
-<link rel="alternate" hreflang="en" href="https://www.loggg.xyz/tags/storage/">
+<link rel="alternate" type="application/rss+xml" href="http://localhost:1313/tags/storage/index.xml">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/tags/storage/">
 <noscript>
     <style>
         #theme-toggle,
@@ -57,15 +57,7 @@
         }
 
     </style>
-</noscript><meta property="og:url" content="https://www.loggg.xyz/tags/storage/">
-  <meta property="og:site_name" content="loggg">
-  <meta property="og:title" content="Storage">
-  <meta property="og:locale" content="en-us">
-  <meta property="og:type" content="website">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Storage">
-<meta name="twitter:description" content="">
-
+</noscript>
 </head>
 
 <body class="list" id="top">
@@ -83,7 +75,7 @@
 <header class="header">
     <nav class="nav">
         <div class="logo">
-            <a href="https://www.loggg.xyz/" accesskey="h" title="loggg (Alt + H)">loggg</a>
+            <a href="http://localhost:1313/" accesskey="h" title="loggg (Alt + H)">loggg</a>
             <div class="logo-switches">
                 <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
                     <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
@@ -109,7 +101,7 @@
         </div>
         <ul id="menu">
             <li>
-                <a href="https://www.loggg.xyz/" title="Home">
+                <a href="http://localhost:1313/" title="Home">
                     <span>Home</span>
                 </a>
             </li>
@@ -117,7 +109,7 @@
     </nav>
 </header>
 <main class="main"> 
-<header class="page-header"><div class="breadcrumbs"><a href="https://www.loggg.xyz/">Home</a>&nbsp;»&nbsp;<a href="https://www.loggg.xyz/tags/">Tags</a></div>
+<header class="page-header"><div class="breadcrumbs"><a href="http://localhost:1313/">Home</a>&nbsp;»&nbsp;<a href="http://localhost:1313/tags/">Tags</a></div>
   <h1>
     Storage
   </h1>
@@ -125,7 +117,7 @@
 
 <article class="post-entry tag-entry"> 
 <figure class="entry-cover">
-        <img loading="lazy" src="https://www.loggg.xyz/images/pages_and_layout_in_mint.png" alt="A diagram of memory pages with a subtle notebook aesthetic">
+        <img loading="lazy" src="http://localhost:1313/images/pages_and_layout_in_mint.png" alt="A diagram of memory pages with a subtle notebook aesthetic">
 </figure>
   <header class="entry-header">
     <h2 class="entry-hint-parent">Pages and Layouts in Mint
@@ -138,12 +130,30 @@ Persistent (like SSD or HDD) Volatile (RAM) If we want some data to persist even
 ...</p>
   </div>
   <footer class="entry-footer"><span title='2025-06-29 12:00:00 +0530 IST'>June 29, 2025</span>&nbsp;·&nbsp;11 min&nbsp;·&nbsp;Chirag Chandrashekhar</footer>
-  <a class="entry-link" aria-label="post link to Pages and Layouts in Mint" href="https://www.loggg.xyz/posts/pages-in-mint/"></a>
+  <a class="entry-link" aria-label="post link to Pages and Layouts in Mint" href="http://localhost:1313/posts/pages-in-mint/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+<figure class="entry-cover">
+        <img loading="lazy" src="http://localhost:1313/images/file_descriptor_and_mmap.png" alt="Diagram of file descriptor to inode mapping with mmap accessing a memory page.">
+</figure>
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">File descriptors and mmap
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Recap Before we jump into file descriptors and mmap, here’s a quick recap from the previous section:
+Pages are fixed-size blocks of memory Page layouts are how data is kept inside those blocks Mint’s page layouts are just what Mint needs for its use cases This is the base we’ll use to understand how files work in the OS. Mainly, we’ll talk about file descriptors and how mmap uses them.
+File descriptors Every time a process opens a file, the OS returns a number. That number is called a file descriptor, and the process uses it to talk to the file from that point on.
+...</p>
+  </div>
+  <footer class="entry-footer">4 min&nbsp;·&nbsp;Chirag Chandrashekhar</footer>
+  <a class="entry-link" aria-label="post link to File descriptors and mmap" href="http://localhost:1313/posts/file-descriptors-and-mmap/"></a>
 </article>
     </main>
     
 <footer class="footer">
-        <span>&copy; 2025 <a href="https://www.loggg.xyz/">loggg</a></span> · 
+        <span>&copy; 2025 <a href="http://localhost:1313/">loggg</a></span> · 
 
     <span>
         Powered by

@@ -2,30 +2,32 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://www.loggg.xyz/tags/database/</loc>
+    <loc>http://localhost:1313/tags/database/</loc>
     <lastmod>2025-06-29T12:00:00+05:30</lastmod>
   </url><url>
-    <loc>https://www.loggg.xyz/</loc>
+    <loc>http://localhost:1313/</loc>
     <lastmod>2025-06-29T12:00:00+05:30</lastmod>
   </url><url>
-    <loc>https://www.loggg.xyz/tags/mint/</loc>
+    <loc>http://localhost:1313/tags/mint/</loc>
     <lastmod>2025-06-29T12:00:00+05:30</lastmod>
   </url><url>
-    <loc>https://www.loggg.xyz/tags/os/</loc>
+    <loc>http://localhost:1313/tags/os/</loc>
     <lastmod>2025-06-29T12:00:00+05:30</lastmod>
   </url><url>
-    <loc>https://www.loggg.xyz/posts/pages-in-mint/</loc>
+    <loc>http://localhost:1313/posts/pages-in-mint/</loc>
     <lastmod>2025-06-29T12:00:00+05:30</lastmod>
   </url><url>
-    <loc>https://www.loggg.xyz/posts/</loc>
+    <loc>http://localhost:1313/posts/</loc>
     <lastmod>2025-06-29T12:00:00+05:30</lastmod>
   </url><url>
-    <loc>https://www.loggg.xyz/tags/storage/</loc>
+    <loc>http://localhost:1313/tags/storage/</loc>
     <lastmod>2025-06-29T12:00:00+05:30</lastmod>
   </url><url>
-    <loc>https://www.loggg.xyz/tags/</loc>
+    <loc>http://localhost:1313/tags/</loc>
     <lastmod>2025-06-29T12:00:00+05:30</lastmod>
   </url><url>
-    <loc>https://www.loggg.xyz/categories/</loc>
+    <loc>http://localhost:1313/categories/</loc>
+  </url><url>
+    <loc>http://localhost:1313/posts/file-descriptors-and-mmap/</loc>
   </url>
 </urlset>
