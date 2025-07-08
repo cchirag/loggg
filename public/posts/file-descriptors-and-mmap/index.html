@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" dir="auto">
 
-<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="robots" content="noindex, nofollow">
+<meta name="robots" content="index, follow">
 <title>File descriptors and mmap | loggg</title>
 <meta name="keywords" content="mint, database, storage, OS">
 <meta name="description" content="A quick and practical walkthrough of how file descriptors work in Linux, how the OS tracks open files through tables, and how mmap lets us skip expensive reads and writes by mapping files directly into memory.">
 <meta name="author" content="Chirag Chandrashekhar">
-<link rel="canonical" href="http://localhost:1313/posts/file-descriptors-and-mmap/">
+<link rel="canonical" href="https://www.loggg.xyz/posts/file-descriptors-and-mmap/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.8fe10233a706bc87f2e08b3cf97b8bd4c0a80f10675a143675d59212121037c0.css" integrity="sha256-j&#43;ECM6cGvIfy4Is8&#43;XuL1MCoDxBnWhQ2ddWSEhIQN8A=" rel="preload stylesheet" as="style">
 <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -19,7 +19,7 @@
 <link rel="manifest" href="/site.webmanifest" />
 <meta name="theme-color" content="#2e2e33">
 <meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" hreflang="en" href="http://localhost:1313/posts/file-descriptors-and-mmap/">
+<link rel="alternate" hreflang="en" href="https://www.loggg.xyz/posts/file-descriptors-and-mmap/">
 <noscript>
     <style>
         #theme-toggle,
@@ -56,7 +56,79 @@
         }
 
     </style>
-</noscript>
+</noscript><meta property="og:url" content="https://www.loggg.xyz/posts/file-descriptors-and-mmap/">
+  <meta property="og:site_name" content="loggg">
+  <meta property="og:title" content="File descriptors and mmap">
+  <meta property="og:description" content="A quick and practical walkthrough of how file descriptors work in Linux, how the OS tracks open files through tables, and how mmap lets us skip expensive reads and writes by mapping files directly into memory.">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2025-07-08T16:25:00+05:30">
+    <meta property="article:modified_time" content="2025-07-08T16:25:00+05:30">
+    <meta property="article:tag" content="Mint">
+    <meta property="article:tag" content="Database">
+    <meta property="article:tag" content="Storage">
+    <meta property="article:tag" content="OS">
+    <meta property="og:image" content="https://www.loggg.xyz/posts/file-descriptors-and-mmap/images/file_descriptor_and_mmap.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://www.loggg.xyz/posts/file-descriptors-and-mmap/images/file_descriptor_and_mmap.png">
+<meta name="twitter:title" content="File descriptors and mmap">
+<meta name="twitter:description" content="A quick and practical walkthrough of how file descriptors work in Linux, how the OS tracks open files through tables, and how mmap lets us skip expensive reads and writes by mapping files directly into memory.">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://www.loggg.xyz/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "File descriptors and mmap",
+      "item": "https://www.loggg.xyz/posts/file-descriptors-and-mmap/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "File descriptors and mmap",
+  "name": "File descriptors and mmap",
+  "description": "A quick and practical walkthrough of how file descriptors work in Linux, how the OS tracks open files through tables, and how mmap lets us skip expensive reads and writes by mapping files directly into memory.",
+  "keywords": [
+    "mint", "database", "storage", "OS"
+  ],
+  "articleBody": "Recap Before we jump into file descriptors and mmap, here’s a quick recap from the previous post:\nPages are fixed-size blocks of memory Page layouts are how data is kept inside those blocks Mint’s page layouts are just what Mint needs for its use cases This is the base we’ll use to understand how files work in the OS. Mainly, we’ll talk about file descriptors and how mmap uses them.\nFile descriptors Every time a process opens a file, the OS returns a number. That number is called a file descriptor, and the process uses it to talk to the file from that point on.\nThe first three are fixed and pretty standard:\n0 → STDIN 1 → STDOUT 2 → STDERR After that, it’s just the next available number — so if you open another file, you’ll probably get 3, then 4, and so on.\nBut here’s the thing: that number by itself doesn’t hold any file data. It’s more like a pointer into a bunch of tables that the OS maintains behind the scenes. These tables know all the details — which file, where the cursor is, what permissions we have, and so on.\nYou can think of it like this:\nfile descriptor → file table → system-wide open file table → inode table Let’s break that down.\nFile descriptor This is just the number the OS gives you when a file is opened. It lives inside the process. The number itself is nothing special. It just points to an entry in the process’s file table.\nFile table Every process has its own file table. So Mint gets one, your terminal gets one, your browser has one too — all separate.\nEach row in the table tells the OS:\nWhat file descriptor this is Where the current read/write pointer is What access mode we asked for (read, write, or both) And a pointer to something called the system-wide open file table So when you run a read or write, this is where the OS looks first — “What file is this process talking about? What offset? What permissions?”\nSystem-wide open file table This is shared across all processes. It keeps track of every file that’s currently open in the system.\nEach entry here says:\n“This is the actual file we’re dealing with” “Here’s a pointer to the inode” “These are the open modes (read/write)” “This is how many file descriptors are pointing here” So if Mint and another process both open the same file, they’ll each have their own file descriptor and their own file table entry, but they’ll both point to the same row here.\nThis is how the OS allows file sharing safely.\nInode table (aka index table) This is where the actual file metadata lives. It has details like:\nFile size File permissions Created/modified timestamps And pointers to the actual data blocks on disk When the OS reaches this point, it knows exactly where the file lives on disk and how to access it.\nEven a simple read or write goes through this full chain. It feels a bit much for something that looks like just a file open — but the OS has to juggle a lot: multiple processes, multiple access modes, safe sharing, and tracking everything properly.\nThis entire setup also explains how mmap works. mmap needs the file to be open — so it relies on this exact system to connect your memory directly to parts of the file.\nmmap When we generally try to write to a file, we:\nMake a syscall to read the file. Copy the content to our program’s memory. Make changes. Make another syscall to write to the file. This is an expensive process, as it has multiple syscalls and data copies. This works fine for small use cases but becomes inefficient for systems like databases. This is where mmap comes into the picture.\nmmap provides a clean way to read and write data into a file, without copying.\nI have used the word “copy” multiple times here, and it might make you wonder, “What the hell is getting copied?”. Let me explain.\nWhen you do a read() operation on a file, the file is loaded into the kernel space (OS), and then the data is copied into the user space (our process). This is what I mean by copy. Consider a case where we want to access a large file. The copy from kernel space to the user space is resource-intensive.\nmmap moves around this problem by directly mapping one page at a time into the user space. The key difference here is one page at a time. Even if the underlying file is large, we access only a specific part of the file at a time. The file is not completely read. This is helpful in areas where we need frequent reads and writes.\nWith respect to mmap’s relationship with file descriptor, mmap uses the file descriptor to fetch the page from an open file.\nThis covers the basics of file descriptors and mmap. Now, we can go ahead with the implementation of our pages.\n",
+  "wordCount" : "850",
+  "inLanguage": "en",
+  "image":"https://www.loggg.xyz/posts/file-descriptors-and-mmap/images/file_descriptor_and_mmap.png","datePublished": "2025-07-08T16:25:00+05:30",
+  "dateModified": "2025-07-08T16:25:00+05:30",
+  "author":{
+    "@type": "Person",
+    "name": "Chirag Chandrashekhar"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.loggg.xyz/posts/file-descriptors-and-mmap/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "loggg",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.loggg.xyz/favicon.ico"
+    }
+  }
+}
+</script>
 </head>
 
 <body class="" id="top">
@@ -74,7 +146,7 @@
 <header class="header">
     <nav class="nav">
         <div class="logo">
-            <a href="http://localhost:1313/" accesskey="h" title="loggg (Alt + H)">loggg</a>
+            <a href="https://www.loggg.xyz/" accesskey="h" title="loggg (Alt + H)">loggg</a>
             <div class="logo-switches">
                 <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
                     <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
@@ -100,7 +172,7 @@
         </div>
         <ul id="menu">
             <li>
-                <a href="http://localhost:1313/" title="Home">
+                <a href="https://www.loggg.xyz/" title="Home">
                     <span>Home</span>
                 </a>
             </li>
@@ -111,7 +183,7 @@
 
 <article class="post-single">
   <header class="post-header">
-    <div class="breadcrumbs"><a href="http://localhost:1313/">Home</a>&nbsp;»&nbsp;<a href="http://localhost:1313/posts/">Posts</a></div>
+    <div class="breadcrumbs"><a href="https://www.loggg.xyz/">Home</a>&nbsp;»&nbsp;<a href="https://www.loggg.xyz/posts/">Posts</a></div>
     <h1 class="post-title entry-hint-parent">
       File descriptors and mmap
     </h1>
@@ -123,7 +195,7 @@
 </div>
   </header> 
 <figure class="entry-cover">
-        <img loading="eager" src="http://localhost:1313/images/file_descriptor_and_mmap.png" alt="Diagram of file descriptor to inode mapping with mmap accessing a memory page.">
+        <img loading="eager" src="https://www.loggg.xyz/images/file_descriptor_and_mmap.png" alt="Diagram of file descriptor to inode mapping with mmap accessing a memory page.">
         
 </figure>
   <div class="post-content"><h2 id="recap">Recap<a hidden class="anchor" aria-hidden="true" href="#recap">#</a></h2>
@@ -210,17 +282,17 @@ file descriptor → file table → system-wide open file table → inode table
 
   <footer class="post-footer">
     <ul class="post-tags">
-      <li><a href="http://localhost:1313/tags/mint/">Mint</a></li>
-      <li><a href="http://localhost:1313/tags/database/">Database</a></li>
-      <li><a href="http://localhost:1313/tags/storage/">Storage</a></li>
-      <li><a href="http://localhost:1313/tags/os/">OS</a></li>
+      <li><a href="https://www.loggg.xyz/tags/mint/">Mint</a></li>
+      <li><a href="https://www.loggg.xyz/tags/database/">Database</a></li>
+      <li><a href="https://www.loggg.xyz/tags/storage/">Storage</a></li>
+      <li><a href="https://www.loggg.xyz/tags/os/">OS</a></li>
     </ul>
   </footer>
 </article>
     </main>
     
 <footer class="footer">
-        <span>&copy; 2025 <a href="http://localhost:1313/">loggg</a></span> · 
+        <span>&copy; 2025 <a href="https://www.loggg.xyz/">loggg</a></span> · 
 
     <span>
         Powered by
