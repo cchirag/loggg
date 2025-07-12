@@ -100,7 +100,7 @@ Now, let's define a generic header for a page:
 | 12     | 8                | `NextPageID`    | ID of the next page in a linked list or sequence. `0` indicates end.        |
 | 20     | 8                | `PrevPageID`    | ID of the previous page. `0` indicates the start of the sequence.           |
 | 28     | 8                | `Checksum`      | Checksum of the page content (excluding this header) for integrity checks.  |
-| 36     | 27               | `Reserved`      | Reserved space for future header extensions. Ignored during read/write now.|
+| 36     | 28               | `Reserved`      | Reserved space for future header extensions. Ignored during read/write now.|
 
 Each field serves a specific purpose (mentioned in the description) and is assigned to a specific place in memory. There is a reserved section from offset 36 to byte 63. These can be used to extend the header further. Extending the header should mean that the header_version is incremented, serialization and deserialization logics are updated, and making sure that the whole change is backward compatible.
 
