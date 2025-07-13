@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Mind the Gap: Understanding Go Struct Padding | loggg</title>
+<meta name="keywords" content="mint, database, storage, OS, Go">
+<meta name="description" content="Thought your struct was tightly packed? Go might sneak in extra bytes when you&#39;re not looking. This post breaks down how struct layout and padding work, why it matters when working close to memory, and how I ran into this while building Mint">
+<meta name="author" content="Chirag Chandrashekhar">
+<link rel="canonical" href="https://www.loggg.xyz/posts/mind_the_gap/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.8fe10233a706bc87f2e08b3cf97b8bd4c0a80f10675a143675d59212121037c0.css" integrity="sha256-j&#43;ECM6cGvIfy4Is8&#43;XuL1MCoDxBnWhQ2ddWSEhIQN8A=" rel="preload stylesheet" as="style">
+<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="loggg.xyz" />
+<link rel="manifest" href="/site.webmanifest" />
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="https://www.loggg.xyz/posts/mind_the_gap/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript><meta property="og:url" content="https://www.loggg.xyz/posts/mind_the_gap/">
+  <meta property="og:site_name" content="loggg">
+  <meta property="og:title" content="Mind the Gap: Understanding Go Struct Padding">
+  <meta property="og:description" content="Thought your struct was tightly packed? Go might sneak in extra bytes when you&#39;re not looking. This post breaks down how struct layout and padding work, why it matters when working close to memory, and how I ran into this while building Mint">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2025-07-12T00:50:00+05:30">
+    <meta property="article:modified_time" content="2025-07-12T00:50:00+05:30">
+    <meta property="article:tag" content="Mint">
+    <meta property="article:tag" content="Database">
+    <meta property="article:tag" content="Storage">
+    <meta property="article:tag" content="OS">
+    <meta property="article:tag" content="Go">
+    <meta property="og:image" content="https://www.loggg.xyz/posts/mind_the_gap/images/mind_the_gap.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://www.loggg.xyz/posts/mind_the_gap/images/mind_the_gap.png">
+<meta name="twitter:title" content="Mind the Gap: Understanding Go Struct Padding">
+<meta name="twitter:description" content="Thought your struct was tightly packed? Go might sneak in extra bytes when you&#39;re not looking. This post breaks down how struct layout and padding work, why it matters when working close to memory, and how I ran into this while building Mint">
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Posts",
+      "item": "https://www.loggg.xyz/posts/"
+    }, 
+    {
+      "@type": "ListItem",
+      "position":  2 ,
+      "name": "Mind the Gap: Understanding Go Struct Padding",
+      "item": "https://www.loggg.xyz/posts/mind_the_gap/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Mind the Gap: Understanding Go Struct Padding",
+  "name": "Mind the Gap: Understanding Go Struct Padding",
+  "description": "Thought your struct was tightly packed? Go might sneak in extra bytes when you're not looking. This post breaks down how struct layout and padding work, why it matters when working close to memory, and how I ran into this while building Mint",
+  "keywords": [
+    "mint", "database", "storage", "OS", "Go"
+  ],
+  "articleBody": "With page layouts and an understanding of page descriptors and mmap in place, I was ready to define the page structure for Mint. Like most things, it started with some basic struct definitions, methods, and interfaces. Everything seemed to be going smoothly.\nThe next step was to map the byte slice returned by mmap into something more meaningful. Since mmap reflects the file content as-is, working with raw bytes directly can be tedious and error-prone, especially as the structure grows. Even with a formal layout in mind, dealing with offsets and manual encoding felt clunky.\nSo I decided to represent the page header as a Go struct.\nThe header is a 64-byte block that stores metadata about a page. Here’s how I initially defined it:\ntype Header struct { HeaderVersion uint16 // 2 bytes PageType uint16 // 2 bytes PageID uint64 // 8 bytes NextPageID uint64 // 8 bytes PrevPageID uint64 // 8 bytes Checksum uint64 // 8 bytes Reserved [28]byte // 28 bytes } This added up to 64 bytes on paper, which matched the intended layout. But let’s verify the actual offsets:\nField Name Field Type Size (Bytes) Offset HeaderVersion uint16 2 0 PageType uint16 2 2 PageID uint64 8 4 NextPageID uint64 8 12 PrevPageID uint64 8 20 Checksum uint64 8 28 Reserved [28]byte 28 36 So far, it looked fine. But when I ran unsafe.Sizeof(Header{}), the result came out to be 72 bytes instead of the expected 64.\nWhere Did the Extra 8 Bytes Come From? The answer is padding.\nWhat Is Padding? Padding refers to invisible bytes that the Go compiler inserts between struct fields to ensure proper alignment in memory. These alignments aren’t just a Go thing. Most CPUs prefer (and sometimes require) that certain data types begin at memory addresses that are divisible by their size. This allows for faster access and better hardware compatibility.\nLet’s take a look at how different types are aligned:\nType Size (Bytes) Aligned Offsets (Examples) Alignment Rule uint8 1 0, 1, 2, 3, … every byte uint16 2 0, 2, 4, 6, … multiple of 2 uint32 4 0, 4, 8, 12, … multiple of 4 uint64 8 0, 8, 16, 24, … multiple of 8 []T 24 0, 24, 48, 72, … multiple of 8 interface{} 16 0, 16, 32, 48, … multiple of 8 To satisfy these alignment rules, the Go compiler adds padding between fields where needed. In my case, the 72-byte result came from a few extra bytes that were automatically inserted by the compiler.\nHere’s how the actual memory layout looked:\nOriginal Layout (72 bytes) Field Type Size Offset Notes HeaderVersion uint16 2 0 PageType uint16 2 2 padding — 4 4 Added to align uint64 on 8-byte boundary PageID uint64 8 8 NextPageID uint64 8 16 PrevPageID uint64 8 24 Checksum uint64 8 32 Reserved [28]byte 28 40 padding — 4 68 Aligns total size to multiple of 8 📏 Total size: 72 bytes\nReducing or Eliminating Padding Padding exists for a good reason, but that doesn’t mean we always have to live with it. There are a couple of ways to optimize our struct for space without giving up performance.\n1. Rearranging Fields The easiest solution is to place larger fields first, followed by smaller ones. This gives the compiler a better chance of aligning things naturally without needing to insert padding.\nHere’s the rearranged version of the struct:\ntype Header struct { PageID uint64 NextPageID uint64 PrevPageID uint64 Checksum uint64 HeaderVersion uint16 PageType uint16 Reserved [28]byte } Now when I run unsafe.Sizeof(Header{}), I get 64 bytes, exactly what I wanted.\nRearranged Layout (64 bytes) Field Type Size Offset PageID uint64 8 0 NextPageID uint64 8 8 PrevPageID uint64 8 16 Checksum uint64 8 24 HeaderVersion uint16 2 32 PageType uint16 2 34 Reserved [28]byte 28 36 📏 Total size: 64 bytes\n2. Manual Encoding with encoding/binary For full control over byte layout, especially when writing to disk, we can skip structs entirely and manually encode each field using the encoding/binary package.\nbuf := make([]byte, 64) binary.LittleEndian.PutUint16(buf[0:], 1) // HeaderVersion binary.LittleEndian.PutUint16(buf[2:], 2) // PageType binary.LittleEndian.PutUint64(buf[4:], 42) // PageID // ... and so on This method avoids padding entirely and offers platform-independent encoding, but comes at the cost of convenience and type safety.\nFinal Thoughts Struct layout, padding, and alignment in Go aren’t always obvious at first glance. It’s easy to assume structs will be packed exactly the way we write them, but the compiler has its own alignment rules that we need to be aware of.\nFor Mint, I chose to stick with the rearranged struct approach. It keeps things type-safe, easy to understand, and aligned with my goals of predictability and performance.\nYou can try this out yourself in the Go Playground: 👉 https://go.dev/play/p/Blqm-jO4OT9\n",
+  "wordCount" : "795",
+  "inLanguage": "en",
+  "image":"https://www.loggg.xyz/posts/mind_the_gap/images/mind_the_gap.png","datePublished": "2025-07-12T00:50:00+05:30",
+  "dateModified": "2025-07-12T00:50:00+05:30",
+  "author":{
+    "@type": "Person",
+    "name": "Chirag Chandrashekhar"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://www.loggg.xyz/posts/mind_the_gap/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "loggg",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://www.loggg.xyz/favicon.ico"
+    }
+  }
+}
+</script>
+</head>
+
+<body class="" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://www.loggg.xyz/" accesskey="h" title="loggg (Alt + H)">loggg</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://www.loggg.xyz/" title="Home">
+                    <span>Home</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="breadcrumbs"><a href="https://www.loggg.xyz/">Home</a>&nbsp;»&nbsp;<a href="https://www.loggg.xyz/posts/">Posts</a></div>
+    <h1 class="post-title entry-hint-parent">
+      Mind the Gap: Understanding Go Struct Padding
+    </h1>
+    <div class="post-description">
+      Thought your struct was tightly packed? Go might sneak in extra bytes when you&#39;re not looking. This post breaks down how struct layout and padding work, why it matters when working close to memory, and how I ran into this while building Mint
+    </div>
+    <div class="post-meta"><span title='2025-07-12 00:50:00 +0530 IST'>July 12, 2025</span>&nbsp;·&nbsp;4 min&nbsp;·&nbsp;Chirag Chandrashekhar
+
+</div>
+  </header> 
+<figure class="entry-cover">
+        <img loading="eager" src="https://www.loggg.xyz/images/mind_the_gap.png" alt="Visual representation of Go struct memory layout with gaps indicating padding between fields.">
+        
+</figure>
+  <div class="post-content"><p>With <a href="https://www.loggg.xyz/posts/pages-in-mint/">page layouts</a> and an understanding of <a href="https://www.loggg.xyz/posts/file-descriptors-and-mmap/">page descriptors and <code>mmap</code></a> in place, I was ready to define the page structure for Mint. Like most things, it started with some basic struct definitions, methods, and interfaces. Everything seemed to be going smoothly.</p>
+<p>The next step was to map the byte slice returned by <code>mmap</code> into something more meaningful. Since <code>mmap</code> reflects the file content as-is, working with raw bytes directly can be tedious and error-prone, especially as the structure grows. Even with a formal layout in mind, dealing with offsets and manual encoding felt clunky.</p>
+<p>So I decided to represent the page header as a Go struct.</p>
+<p>The header is a 64-byte block that stores metadata about a page. Here&rsquo;s how I initially defined it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Header</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">HeaderVersion</span> <span style="color:#66d9ef">uint16</span>      <span style="color:#75715e">// 2 bytes</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">PageType</span>      <span style="color:#66d9ef">uint16</span>      <span style="color:#75715e">// 2 bytes</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">PageID</span>        <span style="color:#66d9ef">uint64</span>      <span style="color:#75715e">// 8 bytes</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">NextPageID</span>    <span style="color:#66d9ef">uint64</span>      <span style="color:#75715e">// 8 bytes</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">PrevPageID</span>    <span style="color:#66d9ef">uint64</span>      <span style="color:#75715e">// 8 bytes</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Checksum</span>      <span style="color:#66d9ef">uint64</span>      <span style="color:#75715e">// 8 bytes</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Reserved</span>      [<span style="color:#ae81ff">28</span>]<span style="color:#66d9ef">byte</span>    <span style="color:#75715e">// 28 bytes</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>This added up to 64 bytes on paper, which matched the intended layout. But let’s verify the actual offsets:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Field Name</th>
+          <th>Field Type</th>
+          <th>Size (Bytes)</th>
+          <th>Offset</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>HeaderVersion</td>
+          <td><code>uint16</code></td>
+          <td>2</td>
+          <td>0</td>
+      </tr>
+      <tr>
+          <td>PageType</td>
+          <td><code>uint16</code></td>
+          <td>2</td>
+          <td>2</td>
+      </tr>
+      <tr>
+          <td>PageID</td>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>4</td>
+      </tr>
+      <tr>
+          <td>NextPageID</td>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>12</td>
+      </tr>
+      <tr>
+          <td>PrevPageID</td>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>20</td>
+      </tr>
+      <tr>
+          <td>Checksum</td>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>28</td>
+      </tr>
+      <tr>
+          <td>Reserved</td>
+          <td><code>[28]byte</code></td>
+          <td>28</td>
+          <td>36</td>
+      </tr>
+  </tbody>
+</table>
+<p>So far, it looked fine. But when I ran <code>unsafe.Sizeof(Header{})</code>, the result came out to be <strong>72</strong> bytes instead of the expected 64.</p>
+<h3 id="where-did-the-extra-8-bytes-come-from">Where Did the Extra 8 Bytes Come From?<a hidden class="anchor" aria-hidden="true" href="#where-did-the-extra-8-bytes-come-from">#</a></h3>
+<p>The answer is padding.</p>
+<h3 id="what-is-padding">What Is Padding?<a hidden class="anchor" aria-hidden="true" href="#what-is-padding">#</a></h3>
+<p>Padding refers to invisible bytes that the Go compiler inserts between struct fields to ensure proper alignment in memory. These alignments aren&rsquo;t just a Go thing. Most CPUs prefer (and sometimes require) that certain data types begin at memory addresses that are divisible by their size. This allows for faster access and better hardware compatibility.</p>
+<p>Let’s take a look at how different types are aligned:</p>
+<table>
+  <thead>
+      <tr>
+          <th>Type</th>
+          <th>Size (Bytes)</th>
+          <th>Aligned Offsets (Examples)</th>
+          <th>Alignment Rule</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>uint8</code></td>
+          <td>1</td>
+          <td>0, 1, 2, 3, &hellip;</td>
+          <td>every byte</td>
+      </tr>
+      <tr>
+          <td><code>uint16</code></td>
+          <td>2</td>
+          <td>0, 2, 4, 6, &hellip;</td>
+          <td>multiple of 2</td>
+      </tr>
+      <tr>
+          <td><code>uint32</code></td>
+          <td>4</td>
+          <td>0, 4, 8, 12, &hellip;</td>
+          <td>multiple of 4</td>
+      </tr>
+      <tr>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>0, 8, 16, 24, &hellip;</td>
+          <td>multiple of 8</td>
+      </tr>
+      <tr>
+          <td><code>[]T</code></td>
+          <td>24</td>
+          <td>0, 24, 48, 72, &hellip;</td>
+          <td>multiple of 8</td>
+      </tr>
+      <tr>
+          <td><code>interface{}</code></td>
+          <td>16</td>
+          <td>0, 16, 32, 48, &hellip;</td>
+          <td>multiple of 8</td>
+      </tr>
+  </tbody>
+</table>
+<p>To satisfy these alignment rules, the Go compiler adds padding between fields where needed. In my case, the 72-byte result came from a few extra bytes that were automatically inserted by the compiler.</p>
+<p>Here’s how the actual memory layout looked:</p>
+<h4 id="original-layout-72-bytes">Original Layout (<code>72 bytes</code>)<a hidden class="anchor" aria-hidden="true" href="#original-layout-72-bytes">#</a></h4>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Size</th>
+          <th>Offset</th>
+          <th>Notes</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>HeaderVersion</td>
+          <td><code>uint16</code></td>
+          <td>2</td>
+          <td>0</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>PageType</td>
+          <td><code>uint16</code></td>
+          <td>2</td>
+          <td>2</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td><em>padding</em></td>
+          <td>—</td>
+          <td>4</td>
+          <td>4</td>
+          <td>Added to align <code>uint64</code> on 8-byte boundary</td>
+      </tr>
+      <tr>
+          <td>PageID</td>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>8</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>NextPageID</td>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>16</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>PrevPageID</td>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>24</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>Checksum</td>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>32</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td>Reserved</td>
+          <td><code>[28]byte</code></td>
+          <td>28</td>
+          <td>40</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td><em>padding</em></td>
+          <td>—</td>
+          <td>4</td>
+          <td>68</td>
+          <td>Aligns total size to multiple of 8</td>
+      </tr>
+  </tbody>
+</table>
+<p>📏 <strong>Total size: 72 bytes</strong></p>
+<hr>
+<h3 id="reducing-or-eliminating-padding">Reducing or Eliminating Padding<a hidden class="anchor" aria-hidden="true" href="#reducing-or-eliminating-padding">#</a></h3>
+<p>Padding exists for a good reason, but that doesn’t mean we always have to live with it. There are a couple of ways to optimize our struct for space without giving up performance.</p>
+<hr>
+<h4 id="1-rearranging-fields">1. Rearranging Fields<a hidden class="anchor" aria-hidden="true" href="#1-rearranging-fields">#</a></h4>
+<p>The easiest solution is to place larger fields first, followed by smaller ones. This gives the compiler a better chance of aligning things naturally without needing to insert padding.</p>
+<p>Here’s the rearranged version of the struct:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Header</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">PageID</span>        <span style="color:#66d9ef">uint64</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">NextPageID</span>    <span style="color:#66d9ef">uint64</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">PrevPageID</span>    <span style="color:#66d9ef">uint64</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Checksum</span>      <span style="color:#66d9ef">uint64</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">HeaderVersion</span> <span style="color:#66d9ef">uint16</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">PageType</span>      <span style="color:#66d9ef">uint16</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Reserved</span>      [<span style="color:#ae81ff">28</span>]<span style="color:#66d9ef">byte</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Now when I run <code>unsafe.Sizeof(Header{})</code>, I get <strong>64</strong> bytes, exactly what I wanted.</p>
+<h4 id="rearranged-layout-64-bytes">Rearranged Layout (<code>64 bytes</code>)<a hidden class="anchor" aria-hidden="true" href="#rearranged-layout-64-bytes">#</a></h4>
+<table>
+  <thead>
+      <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Size</th>
+          <th>Offset</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>PageID</td>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>0</td>
+      </tr>
+      <tr>
+          <td>NextPageID</td>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>8</td>
+      </tr>
+      <tr>
+          <td>PrevPageID</td>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>16</td>
+      </tr>
+      <tr>
+          <td>Checksum</td>
+          <td><code>uint64</code></td>
+          <td>8</td>
+          <td>24</td>
+      </tr>
+      <tr>
+          <td>HeaderVersion</td>
+          <td><code>uint16</code></td>
+          <td>2</td>
+          <td>32</td>
+      </tr>
+      <tr>
+          <td>PageType</td>
+          <td><code>uint16</code></td>
+          <td>2</td>
+          <td>34</td>
+      </tr>
+      <tr>
+          <td>Reserved</td>
+          <td><code>[28]byte</code></td>
+          <td>28</td>
+          <td>36</td>
+      </tr>
+  </tbody>
+</table>
+<p>📏 <strong>Total size: 64 bytes</strong></p>
+<hr>
+<h4 id="2-manual-encoding-with-encodingbinary">2. Manual Encoding with <code>encoding/binary</code><a hidden class="anchor" aria-hidden="true" href="#2-manual-encoding-with-encodingbinary">#</a></h4>
+<p>For full control over byte layout, especially when writing to disk, we can skip structs entirely and manually encode each field using the <code>encoding/binary</code> package.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#a6e22e">buf</span> <span style="color:#f92672">:=</span> make([]<span style="color:#66d9ef">byte</span>, <span style="color:#ae81ff">64</span>)
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">binary</span>.<span style="color:#a6e22e">LittleEndian</span>.<span style="color:#a6e22e">PutUint16</span>(<span style="color:#a6e22e">buf</span>[<span style="color:#ae81ff">0</span>:], <span style="color:#ae81ff">1</span>)          <span style="color:#75715e">// HeaderVersion</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">binary</span>.<span style="color:#a6e22e">LittleEndian</span>.<span style="color:#a6e22e">PutUint16</span>(<span style="color:#a6e22e">buf</span>[<span style="color:#ae81ff">2</span>:], <span style="color:#ae81ff">2</span>)          <span style="color:#75715e">// PageType</span>
+</span></span><span style="display:flex;"><span><span style="color:#a6e22e">binary</span>.<span style="color:#a6e22e">LittleEndian</span>.<span style="color:#a6e22e">PutUint64</span>(<span style="color:#a6e22e">buf</span>[<span style="color:#ae81ff">4</span>:], <span style="color:#ae81ff">42</span>)         <span style="color:#75715e">// PageID</span>
+</span></span><span style="display:flex;"><span><span style="color:#75715e">// ... and so on</span>
+</span></span></code></pre></div><p>This method avoids padding entirely and offers platform-independent encoding, but comes at the cost of convenience and type safety.</p>
+<hr>
+<h3 id="final-thoughts">Final Thoughts<a hidden class="anchor" aria-hidden="true" href="#final-thoughts">#</a></h3>
+<p>Struct layout, padding, and alignment in Go aren&rsquo;t always obvious at first glance. It’s easy to assume structs will be packed exactly the way we write them, but the compiler has its own alignment rules that we need to be aware of.</p>
+<p>For Mint, I chose to stick with the <strong>rearranged struct</strong> approach. It keeps things type-safe, easy to understand, and aligned with my goals of predictability and performance.</p>
+<p>You can try this out yourself in the Go Playground:
+👉 <a href="https://go.dev/play/p/Blqm-jO4OT9">https://go.dev/play/p/Blqm-jO4OT9</a></p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="https://www.loggg.xyz/tags/mint/">Mint</a></li>
+      <li><a href="https://www.loggg.xyz/tags/database/">Database</a></li>
+      <li><a href="https://www.loggg.xyz/tags/storage/">Storage</a></li>
+      <li><a href="https://www.loggg.xyz/tags/os/">OS</a></li>
+      <li><a href="https://www.loggg.xyz/tags/go/">Go</a></li>
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2025 <a href="https://www.loggg.xyz/">loggg</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

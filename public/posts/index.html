@@ -140,6 +140,23 @@
 
 <article class="post-entry"> 
 <figure class="entry-cover">
+        <img loading="lazy" src="https://www.loggg.xyz/images/mind_the_gap.png" alt="Visual representation of Go struct memory layout with gaps indicating padding between fields.">
+</figure>
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Mind the Gap: Understanding Go Struct Padding
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>With page layouts and an understanding of page descriptors and mmap in place, I was ready to define the page structure for Mint. Like most things, it started with some basic struct definitions, methods, and interfaces. Everything seemed to be going smoothly.
+The next step was to map the byte slice returned by mmap into something more meaningful. Since mmap reflects the file content as-is, working with raw bytes directly can be tedious and error-prone, especially as the structure grows. Even with a formal layout in mind, dealing with offsets and manual encoding felt clunky.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-07-12 00:50:00 +0530 IST'>July 12, 2025</span>&nbsp;·&nbsp;4 min&nbsp;·&nbsp;Chirag Chandrashekhar</footer>
+  <a class="entry-link" aria-label="post link to Mind the Gap: Understanding Go Struct Padding" href="https://www.loggg.xyz/posts/mind_the_gap/"></a>
+</article>
+
+<article class="post-entry"> 
+<figure class="entry-cover">
         <img loading="lazy" src="https://www.loggg.xyz/images/file_descriptor_and_mmap.png" alt="Diagram of file descriptor to inode mapping with mmap accessing a memory page.">
 </figure>
   <header class="entry-header">
