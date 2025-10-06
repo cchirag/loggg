@@ -9,8 +9,8 @@
 <meta name="keywords" content="mint, database, storage, OS">
 <meta name="description" content="Understand how memory pages work in operating systems, and how Mint uses them to store structured data safely.">
 <meta name="author" content="Chirag Chandrashekhar">
-<link rel="canonical" href="https://www.loggg.xyz/posts/pages-in-mint/">
-<link crossorigin="anonymous" href="/assets/css/stylesheet.8fe10233a706bc87f2e08b3cf97b8bd4c0a80f10675a143675d59212121037c0.css" integrity="sha256-j&#43;ECM6cGvIfy4Is8&#43;XuL1MCoDxBnWhQ2ddWSEhIQN8A=" rel="preload stylesheet" as="style">
+<link rel="canonical" href="https://cchirag.github.io/loggg/posts/pages-in-mint/">
+<link crossorigin="anonymous" href="/loggg/assets/css/stylesheet.8fe10233a706bc87f2e08b3cf97b8bd4c0a80f10675a143675d59212121037c0.css" integrity="sha256-j&#43;ECM6cGvIfy4Is8&#43;XuL1MCoDxBnWhQ2ddWSEhIQN8A=" rel="preload stylesheet" as="style">
 <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="shortcut icon" href="/favicon.ico" />
@@ -19,7 +19,7 @@
 <link rel="manifest" href="/site.webmanifest" />
 <meta name="theme-color" content="#2e2e33">
 <meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" hreflang="en" href="https://www.loggg.xyz/posts/pages-in-mint/">
+<link rel="alternate" hreflang="en" href="https://cchirag.github.io/loggg/posts/pages-in-mint/">
 <noscript>
     <style>
         #theme-toggle,
@@ -56,7 +56,7 @@
         }
 
     </style>
-</noscript><meta property="og:url" content="https://www.loggg.xyz/posts/pages-in-mint/">
+</noscript><meta property="og:url" content="https://cchirag.github.io/loggg/posts/pages-in-mint/">
   <meta property="og:site_name" content="loggg">
   <meta property="og:title" content="Pages and Layouts in Mint">
   <meta property="og:description" content="Understand how memory pages work in operating systems, and how Mint uses them to store structured data safely.">
@@ -69,9 +69,9 @@
     <meta property="article:tag" content="Database">
     <meta property="article:tag" content="Storage">
     <meta property="article:tag" content="OS">
-    <meta property="og:image" content="https://www.loggg.xyz/posts/pages-in-mint/images/pages_and_layout_in_mint.png">
+    <meta property="og:image" content="https://cchirag.github.io/loggg/posts/pages-in-mint/images/pages_and_layout_in_mint.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://www.loggg.xyz/posts/pages-in-mint/images/pages_and_layout_in_mint.png">
+<meta name="twitter:image" content="https://cchirag.github.io/loggg/posts/pages-in-mint/images/pages_and_layout_in_mint.png">
 <meta name="twitter:title" content="Pages and Layouts in Mint">
 <meta name="twitter:description" content="Understand how memory pages work in operating systems, and how Mint uses them to store structured data safely.">
 
@@ -85,13 +85,13 @@
       "@type": "ListItem",
       "position":  1 ,
       "name": "Posts",
-      "item": "https://www.loggg.xyz/posts/"
+      "item": "https://cchirag.github.io/loggg/posts/"
     }, 
     {
       "@type": "ListItem",
       "position":  2 ,
       "name": "Pages and Layouts in Mint",
-      "item": "https://www.loggg.xyz/posts/pages-in-mint/"
+      "item": "https://cchirag.github.io/loggg/posts/pages-in-mint/"
     }
   ]
 }
@@ -109,7 +109,7 @@
   "articleBody": "Pages Pages are fixed-size blocks of memory. Think of them like pages in a notebook. Each page has a fixed size, and any data written to memory is written to one or more pages.\nNow let’s take a step back and look at a computer’s memory. There are two types:\nPersistent (like SSD or HDD) Volatile (RAM) If we want some data to persist even after our program ends or the system restarts, it must be saved in persistent storage. RAM is fast but temporary. The downside with persistent storage is that it’s slower. HDDs used to be slow due to their moving parts. SSDs fixed that, but even now, they’re still slower than RAM.\nLet’s say we want to read 12 bytes from a file, change them, and save them back.\nHere’s what happens:\nThe program asks the OS for the data. OS first checks something called the page cache, which is just a memory area in RAM that stores recently used disk data. If it’s already in the page cache, we get it from RAM. If not, the OS goes to the disk, loads the page into RAM, and then gives it to the program. We change the data. That memory page is marked dirty, which means it has been changed but not yet saved to disk. At some point, the OS flushes the dirty page to disk. If we want to make sure it’s really saved, we need to tell it explicitly by calling something like fsync. Sounds like a lot, but that’s where page size comes into play.\nIf the OS fetched data one byte at a time, reading 12 bytes would need 12 trips to the disk. That’s bad because the data you need might not be stored sequentially on the disk. The 12 bytes could be scattered throughout the disc, and fetching from a scattered source is time-consuming than from a sequential source.\nBut say the page size is 4 bytes. Then it just needs 3 trips. A little better.\nNow, someone might ask, why not just make page size 12 bytes and get all of it in one go? That sounds fine, but there are downsides.\nIf the OS loads a large page from disk and only a tiny part of it is used, the rest is wasted. That’s called internal fragmentation. Every time a page is not in memory, it has to be fetched from disk. The bigger the page, the more time it takes. So the OS picks a fixed size (usually 4 KB), which is a tradeoff between too many trips and too much wasted space.\nEvery program then uses this page size when reading or writing data.\nPage layout Now that we understand what a page is, we need to understand how we can structure a page so that it makes sense to us. Without a structure, a page is just a continuous block of memory with some data in it. It is the work of the user (programmer) to give some meaning to a page.\nConsider a page from a book; it generally has 3 sections - header, body, and footer. This is a structure. If the writer decided to jumble these sections on each page of his/her book, readers would be confused and clueless.\nPage layouts serve a similar purpose. They give meaning/context to the data that resides in a page. OS does not direct a user on what the layout should be. It is dependent on the program and its purpose.\nLet’s try to define a page layout for a fictional program that stores 3 numbers - 2 are addends (2 numbers used for addition), and one is the sum of those 2 numbers.\nSize of the page - 4KB (4096 Bytes) Size of a single addend - 8B (64-bit integer) Size of the sum - 8B (64-bit integer) With the given information, we can understand that:\nEach entry is 24 bytes in size (8 bytes + 8 bytes + 8 bytes) A single page can hold up to 170 entries (4096 bytes / 24 bytes) But we also might need some metadata for each page - page number. Let’s add this to a section called header. So, each header of a page starts at the 0th byte of the page to the 7th byte of the page. This gives us 4088 bytes to write our data, and the data section starts from the 8th byte.\nSo, the layout looks something like:\nHeader (8 bytes) Operation 1 (24 bytes) Operation 2 (24 bytes) Operation 3 (24 bytes) Operation 170 (24 bytes) metadata - page number addend 1 + addend 2 = sum 1 addend 3 + addend 4 = sum 2 addend 5 + addend 6 = sum 3 addend 339+ addend 340 = sum 170 Mint’s page layout Each page in Mint has a specific layout. Before getting into that, let’s see what are the types of pages in Mint.\nMetadata Page - This page contains all the references to other pages in the database. Meta page is analogous to an index page in a book. This is the first page in the entire collection of pages. Free pages list - This page references all the pages that were created but are not being used to read data from. This page is used during database writes, or new page creation when an index tree has to split, or any other page overflows, and needs extension. Consider this like a recycle bin for pages. Index pages - This page references the nodes of the index tree. They contain internal, or leaf nodes of an index tree. All the reads and writes to the database happen here. This forms the core of our database and needs the most attention. Overflow page - Any data inserted into the database might have the potential to overflow beyond the scope of a page. This overflow could be due to a lengthy key or value. Overflow pages provide a way to extend the index pages to contain relevant data. These are the basic types of pages in our database. More can be added later if needed, as long as they’re documented. Any new type of page can be added to the database, provided the existing ones do not facilitate the required feature. Make sure that these changes are well documented.\nWith the meaning of a page and the types of pages in place, we can define the size of a single page. Choosing the right page size can be a tricky question to answer, and each answer has its trade-offs. Databases like SQLite allow the user to pick a specific size (a number which is a power of 2, between 512 and 32768). This provides flexibility, but the tradeoff is that if the OS’s page cache size is less than the database’s page size, fetching a single page means multiple disk IOs. If the OS’s page cache size is greater than the database’s page size, fetching a single page means overfetching, for a small portion of relevant data. Mint uses the OS’s default page size. That means fewer surprises. It also avoids under-fetching or over-fetching during disk I/O. This reduces flexibility but improves performance by avoiding under-fetching and over-fetching disk IOs. Go provides a convenient method to fetch the underlying OS’s page size: pageSize := os.Getpagesize().\nPage header Coming to the layout of a page, each page has a generic header that contains all the metadata for easy navigation through the collection. Below is a definition of the current metadata. These can change to facilitate certain features and requirements. Always remember to document these changes and make sure that the changes are backward compatible. Data points can be added, but removing any is highly discouraged.\nNow, let’s define a generic header for a page:\nOffset (in bytes) Size (in bytes) Key Description 0 2 HeaderVersion A version tag for the page header format. Helps with backward compatibility. 2 2 PageType Encodes the type of page (e.g., internal, leaf, metadata) using constants. 4 8 PageID Unique identifier for this page. Used to find the page offset in the file. It is a logical entry which helps us fetch the page offset with the formula PageSize*PageID 12 8 NextPageID ID of the next page in a linked list or sequence. 0 indicates end. 20 8 PrevPageID ID of the previous page. 0 indicates the start of the sequence. 28 8 Checksum Checksum of the page content (excluding this header) for integrity checks. 36 28 Reserved Reserved space for future header extensions. Ignored during read/write now. Each field serves a specific purpose (mentioned in the description) and is assigned to a specific place in memory. There is a reserved section from offset 36 to byte 63. These can be used to extend the header further. Extending the header should mean that the header_version is incremented, serialization and deserialization logics are updated, and making sure that the whole change is backward compatible.\nThe length of the header is fixed to 64 bytes (0 - 63 bytes), and this forms the first 64 bytes of a page.\nPage definitions Metadata Page The metadata page is the first page of any Mint database files. They function like an anchor point for multiple other types of pages. Let’s define the metadata page’s structure.\nOffset (in bytes) Size (in bytes) Key Description 0 64 Header Standard page header shared by all pages. Contains metadata like page ID, type, version, etc. 64 8 FreePageRootID Page ID of the root of the free page list. Used to track reusable pages. 72 8 IndexRootPageID Page ID of the root of the index structure (e.g., B-Tree). 80 PageSize - 80 Reserved Reserved space for future metadata extensions without breaking compatibility. Free Pages List Page The free pages list page contains a list of all the free pages available to be written. These pages are added to the list when data is added or deleted from the database. Maintaining a free pages list helps us reuse unused or stale pages, without creating new ones. This ensures that minimal resources are allocated and any allocated resource is utilized to their maximum potential. Let’s define the free page list page’s structure.\nOffset (in bytes) Size (in bytes) Key Description 0 64 Header Standard page header. Contains page_type, page_id, next_page_id, etc. 64 variable []Entries List of reusable page entries. Each is 10 bytes long. Entry Format\nField Size (bytes) Description PageType 2 Type of the reusable page (same enum used in header) PageID 8 ID of the page that can be reused Index Page The index page is the most important element in the database. It contains all the data, distributed across multiple pages for fast and efficient queries. Specific data structures are chosen to arrange the data across pages. Some of the widely used structures are: B+ Tree, LSM Tree, Hash Table, Inverted Index, Bitmap Index, etc. The definition and the layout of the index page depend on the implementation of the underlying data structure. To facilitate flexibility and extensibility, we declare a metadata region. This region encapsulates all the necessary metadata required for the data structure’s implementation. Let’s define a generic structure for an index page.\nOffset (in bytes) Size (in bytes) Key Description 0 64 Header Contains standard page header (page ID, type, next/prev page ID, etc.) 64 64 Metadata Index-specific metadata (algorithm, node type, number of keys, flags, etc.) 128 PageSize - 128 Data Actual index data: keys, values, or child pointers depending on the algorithm’s implementation Overflow Page The overflow page is an extension of the index page for storing data that overflowed from the initial page. This should not be used to create a new entry, but only to complete an incomplete entry. It is the responsibility of the Index Page developer to utilize overflow pages as they see fit. Let’s define a generic structure for an overflow page.\nOffset (in bytes) Size (in bytes) Key Description 0 64 Header Standard page header (includes page_id, page_type, next_page_id, etc.) 64 PageSize - 64 Data Overflow content — spillover data from another page (usually large values) Notes All of this is specific to Mint, but the concepts are universal. If you’re building your own store, you might tweak the layout or add more page types, and that’s totally fine. All integers (like PageID, PageType, etc.) are encoded in little endian format — the same as what most modern machines (and Go’s binary encoding) expect. This ensures cross-platform readability. PageID math is important — PageOffset = PageSize * PageID. This lets us jump directly to a page using basic arithmetic. You should not remove existing header fields. If you really need to change something, add a new field in the reserved section and bump up the HeaderVersion. Overflow pages aren’t standalone — they’re sidekicks, used only when the primary page can’t fit everything. Don’t start writing fresh entries directly into overflow pages. Free page lists matter. Without them, every delete would just waste space. With them, we get recycling — fewer file writes, less bloat. If you’re experimenting with different index structures (like B+ Trees or LSM Trees), the index page metadata section is your playground. Define what you need, document it, and keep it extensible. Mint sticks to the OS’s page size. It keeps things simple and avoids the pain of partial reads or misaligned IO. 🧩 Footnote: This post is just one piece of a bigger puzzle. Mint isn’t fully built yet. This article is part of its ongoing design and development process.\nIf you want to dive deeper: Page - computer memory (Wikipedia)\nPaging in OS (Scaler)\nComputer data storage (Wikipedia)\nBreaking Down the Anatomy of a Database Page (Medium)\nDatabase Pages — A deep dive (Medium)\nDatabase Page Layout (Postgres)\nDatabase File Format (SQLite)\n",
   "wordCount" : "2304",
   "inLanguage": "en",
-  "image":"https://www.loggg.xyz/posts/pages-in-mint/images/pages_and_layout_in_mint.png","datePublished": "2025-06-29T12:00:00+05:30",
+  "image":"https://cchirag.github.io/loggg/posts/pages-in-mint/images/pages_and_layout_in_mint.png","datePublished": "2025-06-29T12:00:00+05:30",
   "dateModified": "2025-06-29T12:00:00+05:30",
   "author":{
     "@type": "Person",
@@ -117,14 +117,14 @@
   },
   "mainEntityOfPage": {
     "@type": "WebPage",
-    "@id": "https://www.loggg.xyz/posts/pages-in-mint/"
+    "@id": "https://cchirag.github.io/loggg/posts/pages-in-mint/"
   },
   "publisher": {
     "@type": "Organization",
     "name": "loggg",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://www.loggg.xyz/favicon.ico"
+      "url": "https://cchirag.github.io/loggg/favicon.ico"
     }
   }
 }
@@ -146,7 +146,7 @@
 <header class="header">
     <nav class="nav">
         <div class="logo">
-            <a href="https://www.loggg.xyz/" accesskey="h" title="loggg (Alt + H)">loggg</a>
+            <a href="https://cchirag.github.io/loggg/" accesskey="h" title="loggg (Alt + H)">loggg</a>
             <div class="logo-switches">
                 <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
                     <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
@@ -172,7 +172,7 @@
         </div>
         <ul id="menu">
             <li>
-                <a href="https://www.loggg.xyz/" title="Home">
+                <a href="https://cchirag.github.io/loggg/loggg" title="Home">
                     <span>Home</span>
                 </a>
             </li>
@@ -183,7 +183,7 @@
 
 <article class="post-single">
   <header class="post-header">
-    <div class="breadcrumbs"><a href="https://www.loggg.xyz/">Home</a>&nbsp;»&nbsp;<a href="https://www.loggg.xyz/posts/">Posts</a></div>
+    <div class="breadcrumbs"><a href="https://cchirag.github.io/loggg/">Home</a>&nbsp;»&nbsp;<a href="https://cchirag.github.io/loggg/posts/">Posts</a></div>
     <h1 class="post-title entry-hint-parent">
       Pages and Layouts in Mint
     </h1>
@@ -195,7 +195,7 @@
 </div>
   </header> 
 <figure class="entry-cover">
-        <img loading="eager" src="https://www.loggg.xyz/images/pages_and_layout_in_mint.png" alt="A diagram of memory pages with a subtle notebook aesthetic">
+        <img loading="eager" src="https://cchirag.github.io/loggg/images/pages_and_layout_in_mint.png" alt="A diagram of memory pages with a subtle notebook aesthetic">
         
 </figure>
   <div class="post-content"><h2 id="pages">Pages<a hidden class="anchor" aria-hidden="true" href="#pages">#</a></h2>
@@ -524,17 +524,17 @@
 
   <footer class="post-footer">
     <ul class="post-tags">
-      <li><a href="https://www.loggg.xyz/tags/mint/">Mint</a></li>
-      <li><a href="https://www.loggg.xyz/tags/database/">Database</a></li>
-      <li><a href="https://www.loggg.xyz/tags/storage/">Storage</a></li>
-      <li><a href="https://www.loggg.xyz/tags/os/">OS</a></li>
+      <li><a href="https://cchirag.github.io/loggg/tags/mint/">Mint</a></li>
+      <li><a href="https://cchirag.github.io/loggg/tags/database/">Database</a></li>
+      <li><a href="https://cchirag.github.io/loggg/tags/storage/">Storage</a></li>
+      <li><a href="https://cchirag.github.io/loggg/tags/os/">OS</a></li>
     </ul>
   </footer>
 </article>
     </main>
     
 <footer class="footer">
-        <span>&copy; 2025 <a href="https://www.loggg.xyz/">loggg</a></span> · 
+        <span>&copy; 2025 <a href="https://cchirag.github.io/loggg/">loggg</a></span> · 
 
     <span>
         Powered by

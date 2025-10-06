@@ -14,7 +14,7 @@ subtitle = "This is a collection of posts and notes from my development work. Iâ
 
 [[params.profileMode.buttons]]
   name = "Posts"
-  url = "/posts"
+  url = "/loggg/posts"
 
 [[params.profileMode.buttons]]
   name = "Mint"
@@ -30,7 +30,7 @@ url = "https://x.com/chiragchan"
 
 [[menu.main]]
   name = "Home"
-  url = "/"
+  url = "/loggg"
   weight = 5
 
 [caches]

@@ -2,31 +2,31 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>Storage on loggg</title>
-    <link>https://www.loggg.xyz/tags/storage/</link>
+    <link>https://cchirag.github.io/loggg/tags/storage/</link>
     <description>Recent content in Storage on loggg</description>
     <generator>Hugo -- 0.147.9</generator>
     <language>en-us</language>
     <lastBuildDate>Sat, 12 Jul 2025 00:50:00 +0530</lastBuildDate>
-    <atom:link href="https://www.loggg.xyz/tags/storage/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://cchirag.github.io/loggg/tags/storage/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Mind the Gap: Understanding Go Struct Padding</title>
-      <link>https://www.loggg.xyz/posts/mind_the_gap/</link>
+      <link>https://cchirag.github.io/loggg/posts/mind_the_gap/</link>
       <pubDate>Sat, 12 Jul 2025 00:50:00 +0530</pubDate>
-      <guid>https://www.loggg.xyz/posts/mind_the_gap/</guid>
+      <guid>https://cchirag.github.io/loggg/posts/mind_the_gap/</guid>
       <description>Thought your struct was tightly packed? Go might sneak in extra bytes when you&amp;#39;re not looking. This post breaks down how struct layout and padding work, why it matters when working close to memory, and how I ran into this while building Mint</description>
     </item>
     <item>
       <title>File descriptors and mmap</title>
-      <link>https://www.loggg.xyz/posts/file-descriptors-and-mmap/</link>
+      <link>https://cchirag.github.io/loggg/posts/file-descriptors-and-mmap/</link>
       <pubDate>Tue, 08 Jul 2025 16:25:00 +0530</pubDate>
-      <guid>https://www.loggg.xyz/posts/file-descriptors-and-mmap/</guid>
+      <guid>https://cchirag.github.io/loggg/posts/file-descriptors-and-mmap/</guid>
       <description>A quick and practical walkthrough of how file descriptors work in Linux, how the OS tracks open files through tables, and how mmap lets us skip expensive reads and writes by mapping files directly into memory.</description>
     </item>
     <item>
       <title>Pages and Layouts in Mint</title>
-      <link>https://www.loggg.xyz/posts/pages-in-mint/</link>
+      <link>https://cchirag.github.io/loggg/posts/pages-in-mint/</link>
       <pubDate>Sun, 29 Jun 2025 12:00:00 +0530</pubDate>
-      <guid>https://www.loggg.xyz/posts/pages-in-mint/</guid>
+      <guid>https://cchirag.github.io/loggg/posts/pages-in-mint/</guid>
       <description>Understand how memory pages work in operating systems, and how Mint uses them to store structured data safely.</description>
     </item>
   </channel>
