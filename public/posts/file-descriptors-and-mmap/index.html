@@ -56,7 +56,21 @@
         }
 
     </style>
-</noscript><meta property="og:url" content="https://cchirag.github.io/loggg/posts/file-descriptors-and-mmap/">
+</noscript>
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-HCE4FJHL73"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-HCE4FJHL73');
+        }
+      </script><meta property="og:url" content="https://cchirag.github.io/loggg/posts/file-descriptors-and-mmap/">
   <meta property="og:site_name" content="loggg">
   <meta property="og:title" content="File descriptors and mmap">
   <meta property="og:description" content="A quick and practical walkthrough of how file descriptors work in Linux, how the OS tracks open files through tables, and how mmap lets us skip expensive reads and writes by mapping files directly into memory.">

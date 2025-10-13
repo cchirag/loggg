@@ -31,3 +31,7 @@ url = "https://x.com/chiragchan"
 [caches]
   [caches.images]
     dir = ':cacheDir/images'
+
+[services]
+  [services.googleAnalytics]
+    id = 'G-HCE4FJHL73'
